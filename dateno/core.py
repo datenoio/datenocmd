@@ -71,8 +71,11 @@ class DatenoCmd(object):
 
     def index_search(self, query, filters=[], offset=0, page=1, per_page=10, limit=500, sort_by='scores.feature_score:desc'):
         url = SEARCH_API_PATH +'?q=' + query + f'&offset={offset}&page={page}&limit={limit}&sort_by={sort_by}&hitsPerPage={per_page}'
-        url = url + '&apikey=%s' % (self.apikey)
+        url = url + '&apikey=%s' % (self.apikey)        
         for afilter in filters:
+            if len(afilter.strip()) == 0: continue
+            parts = afilter.split('=', 1)
+            afilter = '"' + parts[0] + '"' + '=' + '"' + parts[1] + '"'
             url += f'&filters={afilter}'
         logging.debug(f'Requesting {url}')
         resp = requests.get(url)
