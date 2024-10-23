@@ -156,7 +156,10 @@ def index_search(query, filters:str="", offset:int=0, page:int=1, per_page:int=1
                data = FlatDict(item, delimiter='.')
                record = []
                for h in headers.split(','):
-                   record.append(data[h])
+                   try:
+                       record.append(data[h])
+                   except KeyError: 
+                       record.append('')
                outres.append(record)
            print(tabulate(outres, headers=headers.split(','))) 
 
@@ -215,8 +218,8 @@ def registry_search(query, filters:str="", headers:str='uid,name,link', output:s
            return
        for item in results['data']:
            data = FlatDict(item, delimiter='.')
-           record = []
-           for h in headers.split(','):
+           record = []               
+           for h in headers.split(','):              
                record.append(data[h])
            outres.append(record)
        print(tabulate(outres, headers=headers.split(','))) 
