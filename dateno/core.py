@@ -183,7 +183,7 @@ def index_get(entry_id, format:str='yaml', output:str=None, debug:bool=False, ap
 
 
 @registry_app.command("get")
-def registry_get(catalog_id, mode:str='yaml', output:str=None, debug:bool=False, apikey:str=None):
+def registry_get(catalog_id, format:str='yaml', output:str=None, debug:bool=False, apikey:str=None):
     cmd = DatenoCmd(debug, apikey)
     results = cmd.registry_get(catalog_id)
     if output is not None:
@@ -192,10 +192,10 @@ def registry_get(catalog_id, mode:str='yaml', output:str=None, debug:bool=False,
         f.close()
         print(f'Results saved to {output}')
     else:
-       if mode == 'json':
-           print(json.dumps(results, indent=4))
-       elif mode == 'yaml':
-           print(yaml.dump(results, default_flow_style=False))
+        if format == 'json':
+            print(json.dumps(results, indent=4))
+        elif format == 'yaml':
+            print(yaml.dump(results, default_flow_style=False))
 
 
 @registry_app.command('search')
