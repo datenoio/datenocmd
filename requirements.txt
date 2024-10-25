@@ -1,4 +1,6 @@
 PyYAML
 typer
 tabulate
+flatdict
+requests
 chardet
