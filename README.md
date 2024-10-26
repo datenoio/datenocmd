@@ -4,7 +4,7 @@ Command-line tool to use with Dateno dataset search engine
 
 ## Getting started
 
-1. Install tool with command ```python3 setup.py install``` or 'python3 -m build .'
+1. Install tool with command ```python3 setup.py install``` or ```python3 -m build .```
 2. Obtain your Dateno API key at 'https://dateno.io'. Sign in and copy copy your key somethere locally
 2. Create YAML config file .dateno.yaml in you working or user directory. Add line: "apikey: your_secret_key". 
 
