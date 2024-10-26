@@ -6,7 +6,7 @@ Command-line tool to use with Dateno dataset search engine
 
 1. Install tool with command ```python3 setup.py install```
 2. Obtain your Dateno API key at 'https://dateno.io'. Sign in and copy copy your key somethere locally
-2. Create YAML config file .dateno.yaml in you working or user directory. Add line: "apikey: your_secret_ket". 
+2. Create YAML config file .dateno.yaml in you working or user directory. Add line: "apikey: your_secret_key". 
 
 # Commands
 
@@ -18,17 +18,19 @@ Dataset search command is ```dateno index search``` it require *query* argument 
     $ dateno index search 'Atlantic salmon' --headers id,dataset.title,source.name,source.uid --debug --mode results --output
 
     # Search keywords "budget" and only in English and only for country Kyrgyzstan and return table with id, dataset title, source name and source uid. Debug enabled
-    $ dateno index search 'budget' --filters '"source.langs.name"="English";"source.countries.name"="Kyrgyzstan"' --headers id,dataset.title,source.name,source.uid --debug --mode results
+    $ dateno index search 'budget' --filters "source.langs.name"="English";"source.countries.name"="Kyrgyzstan" --headers id,dataset.title,source.name,source.uid --debug --mode results
 
     # Return total number of available datasets for keyword "budget" and country Kyrgyzstan
-    $ dateno index search 'budget' --filters '"source.countries.name"="Kyrgyzstan"' --mode totals
+    $ dateno index search 'budget' --filters "source.countries.name"="Kyrgyzstan" --mode totals
 
     # Return facets distribution for keyword "budget" and country Kyrgyzstan
-    $ dateno index search 'budget' --filters '"source.countries.name"="Kyrgyzstan"' --mode facets
+    $ dateno index search 'budget' --filters "source.countries.name"="Kyrgyzstan" --mode facets
 
     # Search keywords "budget" and only in English and only for country Kyrgyzstan and return table with id, dataset title, source name and source uid with page 2 and 50 records
-    $ dateno index search 'budget' --filters '"source.countries.name"="Kyrgyzstan"' --mode facets --page 2 --per_page 50
+    $ dateno index search 'budget' --filters "source.countries.name"="Kyrgyzstan" --mode facets --page 2 --per_page 50
 
+Note: Windows users should use single quotes with *filters* argument. Example
+```dateno index search 'budget' --filters '"source.countries.name"="Kyrgyzstan"' --mode facets```
 
 
 Additional parameters:
