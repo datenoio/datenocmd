@@ -69,8 +69,8 @@ class DatenoCmd(object):
                 print('Error: Empty/not existing config file and apikey is empty')
                 sys.exit(1)      
 
-    def index_search(self, query, filters=[], offset=0, page=1, per_page=10, limit=500, sort_by='scores.feature_score:desc'):
-        url = SEARCH_API_PATH +'?q=' + query + f'&offset={offset}&page={page}&limit={limit}&sort_by={sort_by}&hitsPerPage={per_page}'
+    def index_search(self, query, filters=[], offset=0, page=1, limit=500):
+        url = SEARCH_API_PATH +'?q=' + query + f'&offset={offset}&page={page}&limit={limit}'
         url = url + '&apikey=%s' % (self.apikey)        
         for afilter in filters:
             if len(afilter.strip()) == 0: continue
@@ -99,10 +99,10 @@ class DatenoCmd(object):
 
 
 @index_app.command('search')
-def index_search(query, filters:str="", offset:int=0, page:int=1, per_page:int=10, limit:int=500, sort_by:str='scores.feature_score:desc',  mode:str="results", format:str="yaml", headers:str='id,dataset.title', output:str=None, debug:bool=False, apikey:str=None):
+def index_search(query, filters:str="", offset:int=0, page:int=1, limit:int=500, mode:str="results", format:str="yaml", headers:str='id,dataset.title', output:str=None, debug:bool=False, apikey:str=None):
     """Searches for datasets. Supports modes: results, raw, totals, facets"""
     cmd = DatenoCmd(debug, apikey)
-    results = cmd.index_search(query, filters=filters.split(';'), offset=offset, page=page, per_page=per_page, limit=limit, sort_by=sort_by)
+    results = cmd.index_search(query, filters=filters.split(';'), offset=offset, page=page, limit=limit)
     if 'status' in results.keys():
         print('No results, status: %s' % (results['status']))
         return
@@ -114,8 +114,8 @@ def index_search(query, filters:str="", offset:int=0, page:int=1, per_page:int=1
             print(f'Raw results saved to {output}')
         elif mode == 'results':
             outres = []
-            for item in results['hits']:
-                data = FlatDict(item, delimiter='.')
+            for item in results['hits']['hits']:
+                data = FlatDict(item['_source'], delimiter='.')
                 record = []
                 for h in headers.split(','):
                     record.append(data[h])
@@ -128,32 +128,32 @@ def index_search(query, filters:str="", offset:int=0, page:int=1, per_page:int=1
         elif mode == 'facets':
             if format == 'json':
                 f = open(output, 'w', encoding='utf8')
-                f.write(json.dumps(results['facetDistribution']))
+                f.write(json.dumps(results['aggregations']))
                 f.close()
             elif format == 'yaml':
                 f = open(output, 'w', encoding='utf8')
-                f.write(yaml.dump(results['facetDistribution'], default_flow_style=False))
+                f.write(yaml.dump(results['aggregations'], default_flow_style=False))
                 f.close()
         elif mode == 'totals':
             f = open(output, 'w', encoding='utf8')
-            totals = results['totalHits'] if 'totalHits' in results.keys() else results['estimatedTotalHits']
+            totals = results['total']['value']# if 'totalHits' in results.keys() else results['estimatedTotalHits']
             f.write(str(totals))
             f.close()
     else:       
        if mode == 'raw':
            print(results)
        elif mode == 'totals':
-           totals = results['totalHits'] if 'totalHits' in results.keys() else results['estimatedTotalHits']
+           totals = results['total']['value']# if 'totalHits' in results.keys() else results['estimatedTotalHits']
            print(totals)
        elif mode == 'facets':
            if format == 'json':
-               print(json.dumps(results['facetDistribution'], indent=4))
+               print(json.dumps(results['aggregations'], indent=4))
            elif format == 'yaml':
-               print(yaml.dump(results['facetDistribution'], default_flow_style=False))
+               print(yaml.dump(results['aggregations'], default_flow_style=False))
        elif mode == 'results':
            outres = []
-           for item in results['hits']:
-               data = FlatDict(item, delimiter='.')
+           for item in results['hits']['hits']:
+               data = FlatDict(item['_source'], delimiter='.')
                record = []
                for h in headers.split(','):
                    try:
