@@ -136,14 +136,14 @@ def index_search(query, filters:str="", offset:int=0, page:int=1, limit:int=500,
                 f.close()
         elif mode == 'totals':
             f = open(output, 'w', encoding='utf8')
-            totals = results['total']['value']# if 'totalHits' in results.keys() else results['estimatedTotalHits']
+            totals = results['hits']['total']['value']# if 'totalHits' in results.keys() else results['estimatedTotalHits']
             f.write(str(totals))
             f.close()
     else:       
        if mode == 'raw':
            print(results)
        elif mode == 'totals':
-           totals = results['total']['value']# if 'totalHits' in results.keys() else results['estimatedTotalHits']
+           totals = results['hits']['total']['value']# if 'totalHits' in results.keys() else results['estimatedTotalHits']
            print(totals)
        elif mode == 'facets':
            if format == 'json':
