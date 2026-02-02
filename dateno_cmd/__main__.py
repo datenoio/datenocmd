@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-"""Dateno command line tool."""
+"""Dateno command line tool
+"""
 
 import sys
 
 
 def main():
     try:
-        from dateno_cmd.cli import app
+        from .core import app
 
-        app()
+        exit_status = app()
     except KeyboardInterrupt:
         print("Ctrl-C pressed. Aborting")
     sys.exit(0)
