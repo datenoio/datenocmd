@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Optional
 import inspect
+import logging
 
 import httpx
 
@@ -20,6 +21,7 @@ from dateno.sdk import SDK
 from dateno.utils import RetryConfig
 
 from dateno_cmd.settings import Settings
+from dateno_cmd.utils.errors import UserInputError
 
 
 _sdk_instance: Optional[SDK] = None
@@ -58,7 +60,43 @@ def _build_retry_config(retries: int) -> Optional[RetryConfig]:
     return None
 
 
-def _build_http_clients(apikey: str, timeout_ms: int) -> tuple[httpx.Client, httpx.AsyncClient]:
+_http_logger = logging.getLogger("dateno_cmd.http")
+
+
+def _sanitize_url(url: httpx.URL) -> str:
+    params = []
+    for key, value in url.params.multi_items():
+        if key.lower() == "apikey":
+            params.append((key, "***"))
+        else:
+            params.append((key, value))
+    return str(url.copy_with(params=params))
+
+
+def _log_request(request: httpx.Request) -> None:
+    _http_logger.debug(
+        "http_request method=%s url=%s",
+        request.method,
+        _sanitize_url(request.url),
+    )
+
+
+def _log_response(response: httpx.Response) -> None:
+    elapsed_ms = None
+    if response.elapsed is not None:
+        elapsed_ms = int(response.elapsed.total_seconds() * 1000)
+    _http_logger.debug(
+        "http_response status=%s method=%s url=%s elapsed_ms=%s",
+        response.status_code,
+        response.request.method,
+        _sanitize_url(response.request.url),
+        elapsed_ms if elapsed_ms is not None else "n/a",
+    )
+
+
+def _build_http_clients(
+    apikey: str, timeout_ms: int, debug: bool
+) -> tuple[httpx.Client, httpx.AsyncClient]:
     """
     Build preconfigured HTTPX clients for the SDK.
 
@@ -79,15 +117,21 @@ def _build_http_clients(apikey: str, timeout_ms: int) -> tuple[httpx.Client, htt
         "Authorization": f"Bearer {apikey}",
     }
 
+    event_hooks = None
+    if debug:
+        event_hooks = {"request": [_log_request], "response": [_log_response]}
+
     client = httpx.Client(
         follow_redirects=True,
         headers=headers,
         timeout=timeout_s,
+        event_hooks=event_hooks,
     )
     async_client = httpx.AsyncClient(
         follow_redirects=True,
         headers=headers,
         timeout=timeout_s,
+        event_hooks=event_hooks,
     )
     return client, async_client
 
@@ -110,7 +154,7 @@ def get_sdk(settings: Settings) -> SDK:
         return _sdk_instance
 
     if not settings.apikey:
-        raise RuntimeError(
+        raise UserInputError(
             "API key is not configured. "
             "Please provide it via .dateno_cmd.yaml (apikey: ...) or DATENO_APIKEY env var."
         )
@@ -120,6 +164,7 @@ def get_sdk(settings: Settings) -> SDK:
     client, async_client = _build_http_clients(
         apikey=settings.apikey,
         timeout_ms=settings.timeout_ms or 30000,
+        debug=bool(settings.debug),
     )
 
     _sdk_instance = SDK(

@@ -7,8 +7,7 @@ from pathlib import Path
 import typer
 
 from dateno_cmd.services.context import build_context
-from dateno_cmd.utils.command import run_and_render
-from dateno_cmd.utils.errors import print_sdk_error
+from dateno_cmd.utils.command import call_sdk, run_and_render
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -185,15 +184,14 @@ def stats_export_timeseries(
     Export timeseries data to file (SDK: export_timeseries_file).
     """
     ctx = build_context(None, debug)
-    try:
-        resp = ctx.sdk.statistics_api.export_timeseries_file(
+    resp = call_sdk(
+        ctx,
+        lambda: ctx.sdk.statistics_api.export_timeseries_file(
             ns_id=ns_id,
             ts_id=ts_id,
             fileext=fileext,
-        )
-    except Exception as e:
-        print_sdk_error(e)
-        return
+        ),
+    )
     r = getattr(resp, "result", resp)
     if hasattr(r, "read"):
         r.read()

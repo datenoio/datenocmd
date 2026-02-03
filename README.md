@@ -48,12 +48,25 @@ dateno --version
 - `catalogs` — catalog registry (get/list)
 - `service` — health check
 - `stats` — statistics DB (namespaces, tables, indicators, timeseries, export)
+- `config` — config init/show (local file only)
 
 Common flags:
 
 - `--debug` — verbose logging
 - `--format yaml|json` — output format
 - `--output FILE` — write output to file
+- `--server-url URL` — override API base URL for this command only
+- `--timeout-ms N` — override timeout in ms for this command only
+- `--retries N` — override retry count for this command only
+- `--apikey KEY` — override API key for this command only (may be stored in shell history)
+
+Note: avoid `--apikey` on shared machines or recorded shells; prefer `.dateno_cmd.yaml` or env vars.
+
+Error handling:
+
+- Errors are printed to stderr
+- Exit codes: `0` success, `2` user error, `3` network, `4` API, `1` internal
+- HTTP 4xx → user error, HTTP 5xx → API error
 
 Shell completion:
 
@@ -101,6 +114,79 @@ dateno stats ts ilostat --limit 10
 dateno stats ts-get ilostat CCF_XOXR_CUR_RT.ABW
 dateno stats export-formats
 dateno stats export ilostat CCF_XOXR_CUR_RT.ABW --format csv -o /tmp/ts_export.csv
+```
+
+### Config
+
+```sh
+dateno config init
+dateno config show
+```
+
+## Recipes
+
+```sh
+# Use a different API base URL (one-off)
+dateno --server-url https://api.dateno.io service health
+
+# Save JSON output to file
+dateno search query "environment" --mode raw --format json --output /tmp/search.json
+
+# Export a timeseries to CSV
+dateno stats export ilostat CCF_XOXR_CUR_RT.ABW --format csv -o /tmp/ts_export.csv
+```
+
+## Debug logging
+
+Enable SDK tracing without leaking secrets:
+
+```sh
+dateno --debug service health
+```
+
+Logs are written to stderr and include request/response metadata only.
+Query param `apikey` is redacted.
+
+## FAQ
+
+**Where does the config live?**  
+`./.dateno_cmd.yaml` in your current directory. You can also use ENV vars like `DATENO_APIKEY`.
+
+**How do I switch API environments?**  
+Use `--server-url` for a one-off, or set `server_url` in `.dateno_cmd.yaml`.
+
+**Why doesn't my YAML override take effect?**  
+ENV and `.env` have higher priority than YAML. Use CLI overrides or unset conflicting ENV vars.
+
+## Troubleshooting
+
+**Error: User error (HTTP 4xx)**  
+Check IDs/parameters; for example, verify `entry_id` or `catalog_id`.
+
+**Error: Network error**  
+Verify `server_url`, network connectivity, and proxies.
+
+**API key is missing**  
+Set `DATENO_APIKEY` or create `.dateno_cmd.yaml` with `apikey: ...`.
+
+## Integration and contract tests
+
+These tests hit the live API and are skipped unless required env vars are set.
+
+Required:
+- `DATENO_APIKEY`
+- `DATENO_SERVER_URL` (optional, defaults to https://api.dateno.io)
+
+Optional (for full coverage):
+- `DATENO_TEST_ENTRY_ID`
+- `DATENO_TEST_CATALOG_ID`
+- `DATENO_TEST_QUERY`
+
+Run:
+
+```sh
+pytest -m integration
+pytest -m contract
 ```
 
 ## Project structure

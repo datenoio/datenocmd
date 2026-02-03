@@ -5,6 +5,7 @@ from typing import Optional, Any, Dict
 
 import yaml
 from pydantic import Field
+from dateno_cmd.utils.errors import UserInputError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
     apikey: Optional[str] = Field(default=None, alias="DATENO_APIKEY")
 
     # Non-secret defaults can come from .env
-    server_url: str = Field(default="https://apiv2.dateno.io", alias="DATENO_SERVER_URL")
+    server_url: str = Field(default="https://api.dateno.io", alias="DATENO_SERVER_URL")
     timeout_ms: int = Field(default=30_000, alias="DATENO_TIMEOUT_MS")
     retries: int = Field(default=2, alias="DATENO_RETRIES")
 
@@ -46,26 +47,41 @@ class Settings(BaseSettings):
 
     def load_user_yaml_if_needed(self) -> "Settings":
         """
-        Load user's API key from YAML config if it's not provided via environment variables.
+        Load user configuration from YAML if fields are not provided via env/.env.
 
         Supported locations:
           - DATENO_CONFIG_YAML (explicit path)
           - ./.dateno_cmd.yaml (current working directory)
           - ~/..dateno_cmd.yaml (user home)
         """
-        if self.apikey:
-            return self
-
         cfg = self._read_yaml_config()
         if isinstance(cfg, dict):
-            apikey = cfg.get("apikey")
-            if apikey:
-                self.apikey = str(apikey)
+            fields_set = getattr(self, "__pydantic_fields_set__", set())
 
-            # Optional: allow server_url in YAML as well (handy for users)
-            server_url = cfg.get("server_url")
-            if server_url:
-                self.server_url = str(server_url)
+            def _set_if_missing(field: str, value: Any) -> None:
+                if field in fields_set or value is None:
+                    return
+                if field == "timeout_ms" or field == "retries":
+                    try:
+                        setattr(self, field, int(value))
+                    except (TypeError, ValueError):
+                        return
+                elif field == "debug":
+                    if isinstance(value, bool):
+                        setattr(self, field, value)
+                    elif isinstance(value, (int, float)):
+                        setattr(self, field, bool(value))
+                    elif isinstance(value, str):
+                        setattr(self, field, value.strip().lower() in {"1", "true", "yes", "y", "on"})
+                else:
+                    setattr(self, field, str(value))
+
+            _set_if_missing("apikey", cfg.get("apikey"))
+            _set_if_missing("server_url", cfg.get("server_url"))
+            _set_if_missing("timeout_ms", cfg.get("timeout_ms"))
+            _set_if_missing("retries", cfg.get("retries"))
+            _set_if_missing("output_format", cfg.get("output_format"))
+            _set_if_missing("debug", cfg.get("debug"))
 
         return self
 
@@ -74,7 +90,7 @@ class Settings(BaseSettings):
         Ensure an API key is available for API calls.
         """
         if not self.apikey:
-            raise RuntimeError(
+            raise UserInputError(
                 "API key is missing. Provide it via environment variable DATENO_APIKEY "
                 "or in ~/..dateno_cmd.yaml as 'apikey: ...'."
             )

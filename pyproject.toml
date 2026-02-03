@@ -42,3 +42,9 @@ packages = [
   "dateno_cmd.services",
   "dateno_cmd.utils",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+  "integration: hits real API (requires DATENO_APIKEY)",
+  "contract: compares SDK vs CLI responses (requires DATENO_APIKEY)",
+]

@@ -9,12 +9,11 @@ from flatdict import FlatDict
 from tabulate import tabulate
 
 from dateno_cmd.services.context import build_context
-from dateno_cmd.utils.command import run_and_render
-from dateno_cmd.utils.errors import print_sdk_error
+from dateno_cmd.utils.command import run_and_render, run_and_render_with_mode
 from dateno_cmd.utils.io import load_json_arg, write_csv, write_or_print
 from dateno_cmd.utils.search import extract_doc_from_item, extract_hits_list
 from dateno_cmd.utils.sdk import call_sdk_flexible
-from dateno_cmd.utils.serialization import render_output, to_plain
+from dateno_cmd.utils.serialization import render_output
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -66,28 +65,20 @@ def search_query(
     ctx = build_context(format, debug)
     sdk_filters = [f.strip() for f in (filters.split(";") if filters else []) if f.strip()]
 
-    try:
-        result = ctx.sdk.search_api.search_datasets(
+    data_dict = run_and_render_with_mode(
+        ctx,
+        lambda: ctx.sdk.search_api.search_datasets(
             q=query,
             filters=sdk_filters or None,
             limit=limit,
             offset=offset,
             facets=facets,
             sort_by=sort_by,
-        )
-    except Exception as e:
-        print_sdk_error(e)
-        return
-
-    if mode == "raw":
-        rendered = render_output(result, ctx.out_format)
-        write_or_print(rendered, output)
-        return
-
-    data_dict = to_plain(result)
-    if not isinstance(data_dict, dict):
-        rendered = render_output(data_dict, ctx.out_format)
-        write_or_print(rendered, output)
+        ),
+        mode,
+        output,
+    )
+    if data_dict is None:
         return
 
     if mode == "totals":
@@ -150,21 +141,13 @@ def search_dsl(
     ctx = build_context(format, debug)
     payload = load_json_arg(body)
 
-    try:
-        result = call_sdk_flexible(ctx.sdk.search_api.search_datasets_dsl, body=payload)
-    except Exception as e:
-        print_sdk_error(e)
-        return
-
-    if mode == "raw":
-        rendered = render_output(result, ctx.out_format)
-        write_or_print(rendered, output)
-        return
-
-    data_dict = to_plain(result)
-    if not isinstance(data_dict, dict):
-        rendered = render_output(data_dict, ctx.out_format)
-        write_or_print(rendered, output)
+    data_dict = run_and_render_with_mode(
+        ctx,
+        lambda: call_sdk_flexible(ctx.sdk.search_api.search_datasets_dsl, body=payload),
+        mode,
+        output,
+    )
+    if data_dict is None:
         return
 
     if mode == "totals":
@@ -221,25 +204,17 @@ def search_similar(
     ctx = build_context(format, debug)
     fields_list = [f.strip() for f in fields.split(",") if f.strip()] or None
 
-    try:
-        result = ctx.sdk.search_api.get_similar_datasets(
+    data_dict = run_and_render_with_mode(
+        ctx,
+        lambda: ctx.sdk.search_api.get_similar_datasets(
             entry_id=entry_id,
             limit=limit,
             fields=fields_list,
-        )
-    except Exception as e:
-        print_sdk_error(e)
-        return
-
-    if mode == "raw":
-        rendered = render_output(result, ctx.out_format)
-        write_or_print(rendered, output)
-        return
-
-    data_dict = to_plain(result)
-    if not isinstance(data_dict, dict):
-        rendered = render_output(data_dict, ctx.out_format)
-        write_or_print(rendered, output)
+        ),
+        mode,
+        output,
+    )
+    if data_dict is None:
         return
 
     header_list = [h.strip() for h in headers.split(",") if h.strip()]
