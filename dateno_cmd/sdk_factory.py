@@ -20,6 +20,7 @@ import httpx
 from dateno.sdk import SDK
 from dateno.utils import RetryConfig
 
+from dateno_cmd import __version__ as dateno_cmd_version
 from dateno_cmd.settings import Settings
 from dateno_cmd.utils.errors import UserInputError
 
@@ -95,7 +96,7 @@ def _log_response(response: httpx.Response) -> None:
 
 
 def _build_http_clients(
-    apikey: str, timeout_ms: int, debug: bool
+    apikey: str, timeout_ms: int, debug: bool, client_source: Optional[str]
 ) -> tuple[httpx.Client, httpx.AsyncClient]:
     """
     Build preconfigured HTTPX clients for the SDK.
@@ -113,8 +114,13 @@ def _build_http_clients(
     """
     timeout_s = max(1.0, float(timeout_ms or 30000) / 1000.0)
 
+    source_value = (client_source or "").strip()
+    if not source_value:
+        source_value = f"cmd/{dateno_cmd_version}"
+
     headers = {
         "Authorization": f"Bearer {apikey}",
+        "Dateno-Client": source_value,
     }
 
     event_hooks = None
@@ -165,6 +171,7 @@ def get_sdk(settings: Settings) -> SDK:
         apikey=settings.apikey,
         timeout_ms=settings.timeout_ms or 30000,
         debug=bool(settings.debug),
+        client_source=settings.client_source,
     )
 
     _sdk_instance = SDK(

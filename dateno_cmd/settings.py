@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     output_format: str = Field(default="yaml", alias="DATENO_OUTPUT_FORMAT")  # yaml|json
     debug: bool = Field(default=False, alias="DATENO_DEBUG")
+    client_source: Optional[str] = Field(default=None, alias="DATENO_CLIENT_SOURCE")
 
     # Optional explicit YAML config path override (legacy support)
     config_yaml: Optional[str] = Field(default=None, alias="DATENO_CONFIG_YAML")
