@@ -173,8 +173,8 @@ def search_dsl(
     for hit in hit_list:
         if not isinstance(hit, dict):
             continue
-        src = hit.get("_source", hit)
-        flat = FlatDict(src, delimiter=".")
+        doc = extract_doc_from_item(hit)
+        flat = FlatDict(doc, delimiter=".")
         rows.append([flat.get(h, "") for h in header_list])
 
     if output:
@@ -224,8 +224,8 @@ def search_similar(
     for hit in hit_list:
         if not isinstance(hit, dict):
             continue
-        src = hit.get("_source", hit)
-        flat = FlatDict(src, delimiter=".")
+        doc = extract_doc_from_item(hit)
+        flat = FlatDict(doc, delimiter=".")
         rows.append([flat.get(h, "") for h in header_list])
 
     if output:

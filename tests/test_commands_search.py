@@ -32,6 +32,30 @@ def test_search_query_results_writes_csv(tmp_path, monkeypatch):
     assert content[1] == "1"
 
 
+def test_search_query_results_source_alias(tmp_path, monkeypatch):
+    result = {
+        "hits": {
+            "hits": [
+                {
+                    "id": "1",
+                    "source": {
+                        "dataset": {"title": "t"},
+                        "source": {"name": "catalog", "uid": "c1"},
+                    },
+                }
+            ]
+        }
+    }
+    ctx = _make_ctx(result)
+    monkeypatch.setattr(search_cmd, "build_context", lambda *_args, **_kwargs: ctx)
+
+    out = tmp_path / "out.csv"
+    search_cmd.search_query(query="env", mode="results", output=str(out))
+    content = out.read_text(encoding="utf-8").splitlines()
+    assert content[0] == "id,dataset.title,source.name,source.uid"
+    assert content[1] == "1,t,catalog,c1"
+
+
 def test_search_query_totals_prints_value(capsys, monkeypatch):
     result = {"hits": {"total": {"value": 5}}}
     ctx = _make_ctx(result)
