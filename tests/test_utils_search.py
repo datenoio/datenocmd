@@ -24,6 +24,15 @@ def test_extract_doc_from_item_source():
     assert extract_doc_from_item(item) == {"id": "1"}
 
 
+def test_extract_doc_from_item_source_alias():
+    item = {"id": "1", "source": {"dataset": {"title": "t"}, "source": {"name": "c"}}}
+    assert extract_doc_from_item(item) == {
+        "id": "1",
+        "dataset": {"title": "t"},
+        "source": {"name": "c"},
+    }
+
+
 def test_extract_doc_from_item_document():
     item = {"document": {"id": "2"}}
     assert extract_doc_from_item(item) == {"id": "2"}

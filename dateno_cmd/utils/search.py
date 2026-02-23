@@ -44,13 +44,34 @@ def extract_doc_from_item(item: dict) -> dict:
     """
     Turn an item from hits/data into a flat document dict suitable for FlatDict.
     """
+    def _with_id(doc: dict) -> dict:
+        if doc.get("id") is not None:
+            return doc
+        hit_id = item.get("id")
+        if hit_id is None:
+            hit_id = item.get("_id")
+        if hit_id is None:
+            return doc
+        if doc is item:
+            doc["id"] = hit_id
+            return doc
+        merged = dict(doc)
+        merged["id"] = hit_id
+        return merged
+
     if "_source" in item and isinstance(item["_source"], dict):
-        return item["_source"]
+        return _with_id(item["_source"])
+
+    source = item.get("source")
+    if isinstance(source, dict):
+        # Pydantic SearchQueryResponse.Hit uses `source` for ES `_source`.
+        if "dataset" in source or "source" in source or "resources" in source:
+            return _with_id(source)
 
     if "document" in item and isinstance(item["document"], dict):
-        return item["document"]
+        return _with_id(item["document"])
 
     if "dataset" in item or "source" in item:
-        return item
+        return _with_id(item)
 
-    return item
+    return _with_id(item)
